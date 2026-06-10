@@ -244,4 +244,3 @@ Change `img_path` inside `predict.py` to test another image.
 - Add file type validation for uploads
 - Add a REST API endpoint for prediction
 - Add model versioning for retrained models
-- Improve README with screenshots of the web interface
