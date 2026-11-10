@@ -38,9 +38,13 @@ CNN-based-defect-detection/
 ├── app.py                         # Flask web application
 ├── preprocess.py                  # Dataset preprocessing setup check
 ├── train_cnn.py                   # CNN model training script
+├── evaluate.py                    # Evaluates the saved model and generates the confusion matrix
 ├── casting_defect_cnn.keras       # Trained CNN model
 ├── requirements.txt               # Python dependencies
 ├── README.md                      # Project documentation
+├── results/
+│   ├── RESULTS.md                 # Recorded evaluation metrics and classification report
+│   └── confusion_matrix.png       # Generated confusion matrix
 ├── templates/
 │   └── index.html                 # Flask HTML template
 ├── static/
@@ -251,12 +255,28 @@ This script will:
 casting_defect_cnn.keras
 ```
 
+## Evaluation
+
+Evaluate the saved model against the test images:
+
+```bash
+python evaluate.py
+```
+
+The script prints precision, recall, F1, and the classification report, then saves
+the confusion matrix to `results/confusion_matrix.png`. The output directory is
+created automatically when needed.
+
+- [Recorded evaluation report](results/RESULTS.md)
+- [Confusion matrix](results/confusion_matrix.png)
+
 ## Utility Scripts
 
 | File | Purpose |
 |---|---|
 | `preprocess.py` | Builds Keras image generators and verifies preprocessing setup |
 | `train_cnn.py` | Trains and saves the CNN model |
+| `evaluate.py` | Evaluates the saved model and writes the confusion matrix to `results/` |
 | `app.py` | Runs the Flask upload interface and prediction REST API |
 
 ## Tests
@@ -280,5 +300,4 @@ the decision threshold, upload validation, JSON errors, and the existing web for
 ## Future Improvements
 
 - Add validation graphs for accuracy and loss
-- Add confusion matrix and classification report
 - Add model versioning for retrained models

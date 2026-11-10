@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -12,6 +14,7 @@ import seaborn as sns
 
 IMG_SIZE = (150, 150)
 BATCH_SIZE = 16
+RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 test_datagen = ImageDataGenerator(rescale=1.0 / 255.0)
 
@@ -52,5 +55,7 @@ plt.xlabel("Predicted")
 plt.ylabel("True")
 plt.title("Confusion Matrix")
 plt.tight_layout()
-plt.savefig("confusion_matrix.png")
-print("\nConfusion matrix saved as 'confusion_matrix.png'")
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+matrix_path = RESULTS_DIR / "confusion_matrix.png"
+plt.savefig(matrix_path)
+print(f"\nConfusion matrix saved as '{matrix_path}'")
