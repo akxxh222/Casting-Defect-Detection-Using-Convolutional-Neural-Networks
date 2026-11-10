@@ -2,3 +2,6 @@ flask
 numpy
 pillow
 tensorflow
+scikit-learn
+matplotlib
+seaborn
