@@ -1,160 +1,78 @@
+{% macro icon(name, extra_class='') -%}
+<svg class="icon {{ extra_class }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#{{ name }}"></use></svg>
+{%- endmacro %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casting Defect Inspection System</title>
+    <meta name="theme-color" content="#101914">
+    <title>Casting Inspection · Workbench</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </head>
 <body>
-    <div class="page-shell">
-        <header class="topbar">
-            <div class="brand-wrap">
-                <div class="brand-icon">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <div>
-                    <h1>Casting Defect Inspection System</h1>
-                </div>
-            </div>
+    <div class="app-shell">
+        <header class="app-header">
+            <a class="brand" href="{{ url_for('index') }}" aria-label="Casting inspection home">
+                <span class="brand-mark">{{ icon('aperture') }}</span>
+                <span>Casting inspection<span class="brand-caption">Operator workspace</span></span>
+            </a>
         </header>
-
-        <main class="dashboard">
-            <section class="overview-card">
-                <p class="section-tag">Industrial Interface</p>
-                <h2>Factory-floor familiar controls for casting defect screening.</h2>
-                <p class="overview-copy">
-                    Upload a casting image, inspect the live preview, and review a pass or defect decision in a
-                    clean operator dashboard designed for quick decision reading.
-                </p>
-
-                <div class="overview-grid">
-                    <div class="mini-stat">
-                        <span class="mini-stat-label">Model</span>
-                        <strong>CNN Binary Classifier</strong>
+        <main class="main-content">
+            <div class="page-heading">
+                <div><h1>Surface inspection</h1><p>A dedicated workspace for each casting image.</p></div>
+                <span class="eyebrow">Single-image inspection</span>
+            </div>
+            <p id="upload-error" class="error-message" role="alert" {% if not error %}hidden{% endif %}>{{ error or '' }}</p>
+            <form id="inspection-form" class="workspace" method="POST" enctype="multipart/form-data" data-predict-url="{{ url_for('api_predict') }}">
+                <input id="image-input" class="visually-hidden" type="file" name="image" accept=".jpg,.jpeg,.png,.bmp,image/jpeg,image/png,image/bmp" aria-label="Choose a casting image" aria-describedby="file-requirements upload-error" required>
+                <aside class="file-panel" aria-label="Selected image information">
+                    <h2 class="eyebrow">Selected file</h2>
+                    <div id="selected-file" class="selected-file {% if image_path %}has-file{% endif %}">
+                        {{ icon('file-image') }}
+                        <p id="file-name" class="file-name">{{ image_name or 'No image selected' }}</p>
+                        <p id="file-info" class="file-info">{{ image_info or 'Choose a casting image to begin.' }}</p>
                     </div>
-                    <div class="mini-stat">
-                        <span class="mini-stat-label">Input</span>
-                        <strong>150 x 150 Grayscale</strong>
-                    </div>
-                    <div class="mini-stat">
-                        <span class="mini-stat-label">Workflow</span>
-                        <strong>Upload, Analyze, Verify</strong>
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel inspection-panel">
-                <div class="panel-head">
-                    <div>
-                        <p class="panel-kicker">Inspection Zone</p>
-                        <h3>Image Intake</h3>
-                    </div>
-                    <span class="panel-state">Input Ready</span>
-                </div>
-
-                <form id="inspection-form" class="upload-form" method="POST" enctype="multipart/form-data">
-                    {% if error %}
-                        <p role="alert">{{ error }}</p>
-                    {% endif %}
-                    <label for="image-input" id="dropzone" class="dropzone">
-                        <input id="image-input" type="file" name="image" accept="image/*" required>
-
-                        <div class="preview-shell {% if image_path %}has-image{% endif %}">
-                            {% if image_path %}
-                                <img id="preview-image" src="{{ image_path }}" alt="Uploaded casting image preview">
-                            {% else %}
-                                <div id="preview-placeholder" class="dropzone-placeholder">
-                                    <div class="placeholder-icon"></div>
-                                    <p class="placeholder-title">Drop casting image here</p>
-                                    <p class="placeholder-subtitle">or click to browse files</p>
-                                    <p class="placeholder-meta">PNG, JPG, JPEG, BMP</p>
-                                </div>
-                                <img id="preview-image" src="" alt="Uploaded casting image preview" hidden>
-                            {% endif %}
-                        </div>
+                    <button class="button button-secondary file-picker" type="button" data-pick-image hidden>{{ icon('upload') }}<span id="file-picker-label">{{ 'Replace image' if image_path else 'Choose image' }}</span></button>
+                    <div id="file-requirements" class="file-requirements"><p>JPEG, PNG or BMP</p><p>Up to 5 MiB per request</p><p>Up to 10 million pixels</p></div>
+                </aside>
+                <section class="image-panel" aria-labelledby="image-heading">
+                    <div class="image-toolbar"><h2 id="image-heading">Surface view</h2><button class="button button-quiet mobile-picker" type="button" data-pick-image hidden>{{ icon('upload') }}Choose image</button></div>
+                    <label id="dropzone" class="dropzone {% if image_path %}has-image{% endif %}" for="image-input">
+                        <span id="preview-placeholder" class="preview-placeholder" {% if image_path %}hidden{% endif %}>
+                            <span class="upload-symbol">{{ icon('image-up') }}</span>
+                            <span class="placeholder-title">Drop a casting image here</span>
+                            <span class="placeholder-copy">or click to choose a file</span>
+                            <span class="placeholder-formats">JPEG, PNG or BMP</span>
+                        </span>
+                        <img id="preview-image" class="preview-image" {% if image_path %}src="{{ image_path }}"{% else %}hidden{% endif %} alt="Selected casting image preview">
                     </label>
-
-                    <div class="action-row">
-                        <button class="btn btn-primary" type="submit">Analyze Image</button>
-                        <button id="clear-button" class="btn btn-secondary" type="button">Clear</button>
+                    <div class="image-caption"><span id="preview-caption">{{ image_name or 'No image selected' }}</span><span id="preview-detail">{{ 'Original image' if image_path else 'Your image will appear here' }}</span></div>
+                </section>
+                <section id="result-panel" class="result-panel" data-state="{{ status_code or ('error' if error else 'idle') }}" aria-labelledby="result-heading" aria-busy="false">
+                    <h2 id="result-heading" class="eyebrow">Classification</h2>
+                    <div class="result-content" role="status" aria-live="polite" aria-atomic="true">
+                        <span class="result-symbol"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use id="result-icon" href="{{ url_for('static', filename='icons.svg') }}#{{ 'check' if status_code == 'ok' else ('alert' if status_code == 'defective' or error else 'scan') }}"></use></svg></span>
+                        <h3 id="result-title">{{ prediction or ('Unable to analyze' if error else 'Awaiting image') }}</h3>
+                        <p id="result-description">{% if status_code == 'ok' %}The model found no surface defect in this image.{% elif status_code == 'defective' %}The model detected a potential surface defect.{% elif error %}Choose a valid image and try again.{% else %}Choose a casting image to begin your inspection.{% endif %}</p>
+                        <p id="result-image" class="result-image" {% if not prediction %}hidden{% endif %}>Result for <span id="result-file-name">{{ image_name or '' }}</span></p>
                     </div>
-                </form>
-            </section>
-
-            <section class="panel analysis-panel {{ status_code if status_code else 'idle' }}">
-                <div class="panel-head">
-                    <div>
-                        <p class="panel-kicker">Analysis Results</p>
-                        <h3>Classification Output</h3>
+                    <div class="confidence-block">
+                        <div class="confidence-label"><span>Confidence</span><output id="confidence-value" aria-label="Confidence score">{{ ('%.2f'|format(confidence)) ~ '%' if confidence is not none else '—' }}</output></div>
+                        <div class="confidence-track" aria-hidden="true"><div id="confidence-fill" class="confidence-fill" style="width: {{ confidence if confidence is not none else 0 }}%;"></div></div>
+                        <p id="confidence-note" class="confidence-note">{{ 'Model score for this classification.' if prediction else 'A score appears after analysis.' }}</p>
                     </div>
-                    <span class="panel-state">
-                        {% if prediction %}
-                            Cycle Complete
-                        {% else %}
-                            Awaiting Input
-                        {% endif %}
-                    </span>
-                </div>
-
-                <div class="status-banner {{ status_code if status_code else 'idle' }}">
-                    {% if prediction %}
-                        <span class="status-text">{{ prediction }}</span>
-                    {% else %}
-                        <span class="status-text">System Ready</span>
-                    {% endif %}
-                </div>
-
-                <div class="confidence-block">
-                    <div class="confidence-head">
-                        <span>Confidence Score</span>
-                        <strong>
-                            {% if confidence is not none %}
-                                {{ confidence }}%
-                            {% else %}
-                                --%
-                            {% endif %}
-                        </strong>
+                    <div class="result-actions">
+                        <button id="analyze-button" class="button button-primary" type="submit">{{ icon('scan', 'analyze-icon') }}<span id="analyze-label">Analyze Image</span></button>
+                        <button id="clear-button" class="button button-quiet" type="button" hidden>Clear image</button>
                     </div>
-                    <div class="confidence-track">
-                        <div
-                            class="confidence-fill {{ status_code if status_code else 'idle' }}"
-                            style="width: {{ (confidence_ratio * 100) if confidence is not none else 0 }}%;"
-                        ></div>
-                    </div>
-                </div>
-
-                <div class="terminal-block">
-                    {% if prediction %}
-                        <p>STATUS: {{ prediction }}</p>
-                        <p>CONF: {{ confidence }}%</p>
-                        <p>MODEL: CASTING_CNN_V1</p>
-                    {% else %}
-                        <p>SYSTEM READY</p>
-                        <p>AWAITING INPUT...</p>
-                        <p>MODEL: CASTING_CNN_V1</p>
-                    {% endif %}
-                </div>
-
-                <div class="hardware-strip">
-                    <div class="led-group">
-                        <div class="led-item">
-                            <span class="led fault {% if status_code == 'defective' %}active{% endif %}"></span>
-                            <span>Fault</span>
-                        </div>
-                        <div class="led-item">
-                            <span class="led pass {% if status_code == 'ok' %}active{% endif %}"></span>
-                            <span>Pass</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                </section>
+            </form>
+            <p class="workspace-note">Results apply to the selected image. Choosing another image starts a fresh inspection.</p>
+            <noscript><p class="noscript-note">Choose an image in Surface view and select Analyze Image. The page will reload with your result.</p></noscript>
         </main>
     </div>
-
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

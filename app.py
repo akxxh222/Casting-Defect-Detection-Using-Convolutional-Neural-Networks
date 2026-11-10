@@ -106,14 +106,19 @@ def index():
         "confidence": None,
         "confidence_ratio": 0,
         "image_path": None,
+        "image_name": None,
+        "image_info": None,
     }
 
     if request.method == "POST":
         try:
-            img_array, data, extension = prepare_upload(request.files.get("image"))
+            file = request.files.get("image")
+            img_array, data, extension = prepare_upload(file)
             result = predict_image(img_array)
             filename = f"{uuid4().hex}.{extension}"
             (Path(app.config["UPLOAD_FOLDER"]) / filename).write_bytes(data)
+            with Image.open(BytesIO(data)) as uploaded_image:
+                width, height = uploaded_image.size
         except HTTPException as error:
             return render_template("index.html", **context, error=error.description), error.code
         except Exception:
@@ -128,6 +133,8 @@ def index():
             confidence=result["confidence"],
             confidence_ratio=result["confidence"] / 100,
             image_path=url_for("static", filename=f"uploads/{filename}"),
+            image_name=Path(file.filename.replace("\\", "/")).name,
+            image_info=f"{width} × {height} px · {len(data) / 1024:.1f} KB",
         )
 
     return render_template("index.html", **context)

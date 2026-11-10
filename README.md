@@ -25,6 +25,9 @@ The system includes:
 - `POST /api/predict` for programmatic image classification
 - Image-content validation and upload-size limits
 - Drag-and-drop image upload interface
+- Dark Workbench layout with a large image preview and a dedicated result panel
+- In-page API predictions with loading, success, and error states
+- Previous results reset when an image is replaced or cleared
 - Confidence score display
 - Runtime uploads excluded from Git using `.gitignore`
 
@@ -41,7 +44,9 @@ CNN-based-defect-detection/
 ├── templates/
 │   └── index.html                 # Flask HTML template
 ├── static/
-│   ├── app.js                     # Upload preview and drag/drop logic
+│   ├── app.js                     # Upload preview, API requests, and result state
+│   ├── favicon.svg                # Browser tab icon
+│   ├── icons.svg                  # Interface icons
 │   ├── css/
 │   │   └── style.css              # Web interface styling
 │   └── uploads/
@@ -153,12 +158,18 @@ http://127.0.0.1:5000
 
 The app will:
 
-- Save the uploaded image inside `static/uploads/` using a unique filename
+- Preview the selected image and show its dimensions and file size
+- Send the image to the prediction API without reloading the page
 - Convert the image to grayscale
 - Resize it to `150 x 150`
 - Normalize pixel values to `0-1`
 - Run prediction using `casting_defect_cnn.keras`
 - Display the result and confidence score
+
+Choosing another image or selecting **Clear image** immediately resets the result.
+Requests for an earlier selection are canceled, and late responses are ignored.
+With JavaScript disabled, the form reloads the page with the prediction and saves
+the uploaded image in `static/uploads/` under a unique filename.
 
 ## REST API
 
@@ -261,7 +272,7 @@ the decision threshold, upload validation, JSON errors, and the existing web for
 
 ## Notes
 
-- Uploaded images are stored in `static/uploads/` during app usage.
+- API-backed web predictions process uploads in memory. The form fallback stores uploads in `static/uploads/`.
 - Runtime uploads are ignored by Git through `.gitignore`.
 - The trained model file is included in the repository so the app can run without retraining.
 - If you retrain the model, `casting_defect_cnn.keras` will be overwritten.
