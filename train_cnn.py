@@ -39,6 +39,12 @@ test_generator = test_datagen.flow_from_directory(
     shuffle=False
 )
 
+for split_name, generator in [("Train", train_generator), ("Test", test_generator)]:
+    print(f"\n{split_name} image counts:")
+    for class_name, class_index in generator.class_indices.items():
+        count = int((generator.classes == class_index).sum())
+        print(f"  {class_name}: {count}")
+
 model = Sequential()
 
 # Block 1

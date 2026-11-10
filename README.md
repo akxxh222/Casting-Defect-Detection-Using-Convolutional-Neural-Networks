@@ -11,7 +11,6 @@ The system includes:
 - Image preprocessing for grayscale casting images
 - CNN training using TensorFlow/Keras
 - A saved trained model in `.keras` format
-- Single-image prediction script
 - Flask web app for image upload and classification
 - REST API for image prediction with JSON responses
 - Browser-based preview, confidence display, and pass/fail status UI
@@ -36,8 +35,6 @@ CNN-based-defect-detection/
 ├── app.py                         # Flask web application
 ├── preprocess.py                  # Dataset preprocessing setup check
 ├── train_cnn.py                   # CNN model training script
-├── predict.py                     # Single-image prediction script
-├── check.py                       # Dataset image count checker
 ├── casting_defect_cnn.keras       # Trained CNN model
 ├── requirements.txt               # Python dependencies
 ├── README.md                      # Project documentation
@@ -80,11 +77,7 @@ Current dataset count:
 | Test | OK | 262 |
 | Test | Defective | 453 |
 
-You can verify the counts by running:
-
-```bash
-python check.py
-```
+`train_cnn.py` prints the image count for each class in both splits before training starts.
 
 ## Model Architecture
 
@@ -213,7 +206,7 @@ Training saves `.keras` models directly, so no conversion script is required.
 
 The model outputs a single sigmoid value between `0` and `1`.
 
-In `app.py` and `predict.py`, the decision rule is:
+In `app.py`, the decision rule is:
 
 ```python
 if prediction >= 0.5:
@@ -247,30 +240,12 @@ This script will:
 casting_defect_cnn.keras
 ```
 
-## Single Image Prediction
-
-You can test prediction from the command line using:
-
-```bash
-python predict.py
-```
-
-By default, `predict.py` uses this image path:
-
-```python
-img_path = "test/def_front/cast_def_0_65.jpeg"
-```
-
-Change `img_path` inside `predict.py` to test another image.
-
 ## Utility Scripts
 
 | File | Purpose |
 |---|---|
 | `preprocess.py` | Builds Keras image generators and verifies preprocessing setup |
 | `train_cnn.py` | Trains and saves the CNN model |
-| `predict.py` | Runs prediction on one selected image |
-| `check.py` | Prints image counts for train/test class folders |
 | `app.py` | Runs the Flask upload interface and prediction REST API |
 
 ## Tests
