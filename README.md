@@ -13,6 +13,7 @@ The system includes:
 - A saved trained model in `.keras` format
 - Single-image prediction script
 - Flask web app for image upload and classification
+- REST API for image prediction with JSON responses
 - Browser-based preview, confidence display, and pass/fail status UI
 
 ## Features
@@ -22,6 +23,8 @@ The system includes:
 - Data augmentation during training
 - Trained CNN model saved as `casting_defect_cnn.keras`
 - Flask web application for quick testing
+- `POST /api/predict` for programmatic image classification
+- Image-content validation and upload-size limits
 - Drag-and-drop image upload interface
 - Confidence score display
 - Runtime uploads excluded from Git using `.gitignore`
@@ -35,7 +38,6 @@ CNN-based-defect-detection/
 ├── train_cnn.py                   # CNN model training script
 ├── predict.py                     # Single-image prediction script
 ├── check.py                       # Dataset image count checker
-├── convert.py                     # Converts .h5 model to .keras format
 ├── casting_defect_cnn.keras       # Trained CNN model
 ├── requirements.txt               # Python dependencies
 ├── README.md                      # Project documentation
@@ -158,12 +160,54 @@ http://127.0.0.1:5000
 
 The app will:
 
-- Save the uploaded image temporarily inside `static/uploads/`
+- Save the uploaded image inside `static/uploads/` using a unique filename
 - Convert the image to grayscale
 - Resize it to `150 x 150`
 - Normalize pixel values to `0-1`
 - Run prediction using `casting_defect_cnn.keras`
 - Display the result and confidence score
+
+## REST API
+
+Start the app with `python app.py`, then send a `multipart/form-data` request to
+`POST /api/predict` with one file in the `image` field:
+
+```bash
+curl -X POST -F "image=@test/def_front/cast_def_0_65.jpeg" http://127.0.0.1:5000/api/predict
+```
+
+In Windows PowerShell, use `curl.exe` instead of `curl`.
+
+Example successful response (`200 OK`; scores depend on the image):
+
+```json
+{
+  "prediction": "DEFECTIVE",
+  "status": "defective",
+  "confidence": 99.12
+}
+```
+
+- `prediction`: `PASS - OK` or `DEFECTIVE`.
+- `status`: `ok` or `defective`.
+- `confidence`: the selected class's model score as a percentage from 0 to 100.
+- Accepted image content: JPEG, PNG, or BMP, checked by decoding the file.
+- Maximum request size: 5 MiB, including multipart headers; maximum image size: 10 million pixels.
+- API uploads are processed in memory and are not saved to `static/uploads/`.
+
+Errors use JSON such as `{"error": "The uploaded image is empty."}`:
+
+| HTTP status | Meaning |
+|---|---|
+| `400` | Missing image field, filename, or file contents |
+| `405` | Unsupported HTTP method; use POST |
+| `413` | Request size or image pixel limit exceeded |
+| `415` | Unsupported image format |
+| `422` | Invalid, corrupt, or unreadable image |
+| `500` | Prediction could not be completed |
+
+The web form and API share the same preprocessing, decision threshold, and model.
+Training saves `.keras` models directly, so no conversion script is required.
 
 ## How Prediction Works
 
@@ -227,8 +271,18 @@ Change `img_path` inside `predict.py` to test another image.
 | `train_cnn.py` | Trains and saves the CNN model |
 | `predict.py` | Runs prediction on one selected image |
 | `check.py` | Prints image counts for train/test class folders |
-| `convert.py` | Converts an older `casting_defect_cnn.h5` model into `.keras` format |
-| `app.py` | Runs the Flask upload and prediction interface |
+| `app.py` | Runs the Flask upload interface and prediction REST API |
+
+## Tests
+
+Run the API and web-route regression tests with the installed project dependencies:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests replace model predictions with controlled scores to check both labels,
+the decision threshold, upload validation, JSON errors, and the existing web form.
 
 ## Notes
 
@@ -241,6 +295,4 @@ Change `img_path` inside `predict.py` to test another image.
 
 - Add validation graphs for accuracy and loss
 - Add confusion matrix and classification report
-- Add file type validation for uploads
-- Add a REST API endpoint for prediction
 - Add model versioning for retrained models

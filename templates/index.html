@@ -57,6 +57,9 @@
                 </div>
 
                 <form id="inspection-form" class="upload-form" method="POST" enctype="multipart/form-data">
+                    {% if error %}
+                        <p role="alert">{{ error }}</p>
+                    {% endif %}
                     <label for="image-input" id="dropzone" class="dropzone">
                         <input id="image-input" type="file" name="image" accept="image/*" required>
 
